@@ -1,6 +1,6 @@
 ---
 title: "Homework Assignment 1"
-author: "Your Name Here"
+author: "Wesley Chiu"
 date: 'Assigned: Oct 24, 2020, Due Sun Nov 01, 2020 11:59PM'
 output:
   html_document:
@@ -38,6 +38,23 @@ We will continue working with the nycflights dataset we looked at in class. **Pl
 
 First - make sure that you are reading the data correctly and doing all the data cleaning steps that we did in class. Feel free to go beyond our class work in cleaning the data if you feel the need. 
 
+#### Import and Clean Data
+
+```{r}
+# Read in data
+nyc <- read.csv("nycflights.csv")
+# Look at what needs to be cleaned
+str(nyc)
+# Clean data
+nyc$X <- NULL
+nyc$carrier <- as.factor(nyc$carrier)
+nyc$flight <- as.factor(nyc$flight)
+nyc$tailnum <- as.factor(nyc$tailnum)
+nyc$origin <- as.factor(nyc$origin)
+nyc$dest <- as.factor(nyc$dest)
+```
+
+
 I now would like you to answer the following - all in their own separate R code blocks.
 
 ### Data Exploration
@@ -46,12 +63,19 @@ Let's first do some simple exploration of this data. I would like for you to ans
 
 - How many airlines are there? (Hint: `levels` and `length` can be useful here)
 
+There are `r nlevels(nyc$carrier)` airlines.
+
 - How many flights there were by the airline with code `OO`? (Hint: `nrow` can be useful here along with logical indexing)
+
+There are `r nrow(nyc[nyc$carrier == "OO",])` flights by the airline with code '00'.
 
 - How long is the shortest flight out of any NYC airport? (Hint: `min` can be useful, remember to handle `NA` values)
 
+The shortest flight in distance out of any NYC airport is `r min(nyc$distance, na.rm = TRUE)`.
+
 - How many flights where there by United Airlines (code: UA) on Jan 12th 2013?
 
+There are `r nrow(nyc[nyc$day == "12" & nyc$carrier == "UA" & nyc$month == "1" & nyc$year == "2013", ])` flights by United Airlines on Jan 12th, 2013.
 
 ### Arrival Delay
 
@@ -59,10 +83,23 @@ Lets focus on Arrival Delay.
 
 - What was the average arrival delay for all airports and all airlines combined in Jan 2013? 
 
+```{r}
+mean(nyc[nyc$month == "1" & nyc$year == "2013", ]$arr_delay, na.rm = TRUE)
+# Answer in minutes, first indexed the data so it only considers flights during Jan 2013, then took the mean of arr_delay.
+```
+
+
 - Whats was the median arrival delay for all airports and all airlines combined in Jan 2013?
+
+```{r}
+median(nyc[nyc$month == "1" & nyc$year == "2013", ]$arr_delay, na.rm = TRUE)
+# Answer in minutes, first indexed the data so it only considers flights during Jan 2013, then took the median of arr_delay.
+```
+
 
 Based on your answers to the two questions above, what can you say about the distribution of arrival delays? Provide your answer in a text paragraph form.
 
+The mean is larger than the median, which means that there are larger outliers on the positive side of the distribution than there are on the negative side. The distribution is right skewed, and since the median is negative, we can say that less than half of all flights in Jan 2013 were delayed, but there were also a few extremely long delays. 
 
 ### Airline Performance
 
@@ -70,23 +107,79 @@ Lets see if all airlines are equally terrible as far as flight arrival delays ar
 
 - Calculate average arrival delays by airline (Hint: look up the command `tapply`)
 
+```{r}
+# Average arrival delays using tapply, put into a variable for use later.
+
+arr_delay_by_airline <- tapply(nyc$arr_delay, nyc$carrier, mean, na.rm = TRUE)
+
+arr_delay_by_airline
+
+```
+
+
 - Draw a Bar Plot of Average Arrival Delays for all the Airlines (Hint: command for making a Bar Plot is simply `barplot`)
 
+```{r}
+# Bar Plot of the previous measure
+
+barplot(arr_delay_by_airline)
+
+```
+
+
 - Which airline has the highest average arrival delay? Which airline has the smallest average arrival delay? Are there airlines that actually have negative average delay? Provide answer to this question in a text paragraph form using **inline R code**.
+
+The airline with the highest average arrival delay is: `r names(arr_delay_by_airline[arr_delay_by_airline == max(arr_delay_by_airline)])`
+
+The airline with the smallest average arrival delay is: `r names(arr_delay_by_airline[arr_delay_by_airline == min(arr_delay_by_airline)])`
+
+Airlines that have negative average delay are: `r names(arr_delay_by_airline[arr_delay_by_airline <= 0])`
+
 
 ### Air Gain
 
 Create a new column named airgain such that airgain = (departure delay - arrival delay) : this is the amount of delay a flight made up while in air.
 
+```{r}
+# Create airgain column
+
+nyc$airgain <- nyc$dep_delay - nyc$arr_delay
+```
+
+
 a) Explore airgain data - calculate suitable descriptive statistics and appropriate graphics to better understand this data. This part is open ended - you do what you feel works best for you.
+
+```{r}
+# Take a look at airgain numbers
+summary(nyc$airgain)
+plot(nyc$airgain)
+
+```
+
 
 b) Answer the questions:
 
   - do airlines actually gain any time when in air on average? 
+  
+  Average airgain is `r mean(nyc$airgain, na.rm = TRUE)`, which is positive, so airlines do gain time when in air on average. 
 
   - Calculate average airgain for different airlines - which airlines do a better job, which do a worse job? 
+  
+```{r}
+# Average airgain by airline
+
+avgag <- tapply(nyc$airgain, nyc$carrier, mean, na.rm = TRUE) # saved into a variable for use later in the plot. 
+avgag 
+```
+
+Most airlines do a good job of making up some time while in the air, with AS, HA, and VX doing the best. There are some airlines that have negative airgain, which means they lose time in the air, and they are F9, FL, and MQ. 
 
   - Build a graphic  of average airgain for different airlines sorted by airgain. We want to graphically visualize which airlines are good at "catching up" when in air and which airlines actually lose time further after taking off.
+  
+```{r}
+barplot(sort(avgag, decreasing = TRUE)) # Sorted plot to have a better visual. 
+```
+  
 
 That's it. Once you are done, make sure everything works and knits well and then you can push your changes to the GitHub repo and uplaod the RMD flile and the html output to Canvas.
 
